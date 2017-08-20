@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hit.mapper.MyVocation">    
+
+	<resultMap type="LeaveFormPO" id="leave_map">
+		<id property="leaveFormId" column="Pkey"/>
+		<result property="leaveDays" column="LeaveDays"/>
+		<result property="startDate" column="StartDate"/>
+		<result property="endDate" column="EndDate"/>
+		
+		<association property="staffpo" javaType="StaffPO">
+			<id property="staffId" column="Pkey"/>
+			<result property="staffName" column="UName"/>
+		</association>
+		<association property="leavetypepo" javaType="LeaveTypePO">
+			<id property="typeId" column="Pkey"/>
+			<result property="typeName" column="TypeName"/>
+		</association>
+	</resultMap>
+	
+	<resultMap type="LeaveTypePO" id="leavetype_map">
+	    <id property="typeId" column="Pkey"/>
+	    <result property="typeName" column="TypeName"/>
+		<result property="eflag" column="EFlag"/>
+	</resultMap>
+	
+	<resultMap type="LeaveFormPO" id="apped_map">
+		<id property="leaveFormId" column="Pkey"/>
+		<result property="leaveDays" column="LeaveDays"/>
+		<result property="startDate" column="StartDate"/>
+		<result property="endDate" column="EndDate"/>
+		<result property="staffld" column="Staffld"/>
+		<result property="leaveTypeId" column="LeaveType"/>
+		<result property="appDate" column="AppDate"/>
+		<association property="staffpo" javaType="StaffPO">
+			<id property="staffId" column="Pkey"/>
+			<result property="staffName" column="UName"/>
+		</association>
+		<association property="leavetypepo" javaType="LeaveTypePO">
+			<id property="typeId" column="Pkey"/>
+			<result property="typeName" column="TypeName"/>
+		</association>
+		<association property="afpo" javaType="ApproveFormPO">
+			<id property="approveFormId" column="Pkey"/>
+		</association>
+	</resultMap>
+	
+	<select id="getVocationListCount" resultType="int" parameterType="MyVocationListSearchVO">
+		select count(Pkey)
+		from LeaveForm
+		<where>
+			<if test="1==1">
+				and StaffId=#{staffId}
+			</if>
+		    <if test="startDate!=null">
+		     	and StartDate &gt;= #{startDate}
+		    </if>
+		    <if test="endDate!=null">
+		     	and EndDate &lt;= #{endDate}
+		    </if>
+		</where>
+	</select>  
+	                                 
+	<select id="getVocationList" resultMap="leave_map" parameterType="MyVocationListSearchVO">
+		select lt.TypeName,s.UName,lf.LeaveDays,lf.StartDate,lf.EndDate,lf.Pkey
+		from LeaveType lt,LeaveForm lf,Staff s
+		<where>
+			<if test="1==1">
+				and lt.Pkey=lf.LeaveType
+			</if>
+			<if test="1==1">
+				and lf.StaffId=s.Pkey
+			</if>
+			<if test="1==1">
+				and lf.StaffId=#{staffId}
+			</if>
+			<if test="startDate!=null">
+			    and StartDate &gt;= #{startDate}
+			</if>
+			<if test="endDate!=null">
+			    and EndDate &lt;= #{endDate}
+			</if>
+		</where>
+		limit #{start},#{length}
+	</select>
+	
+	<select id="getAppedListcount" resultType="int" parameterType="AppedListVO">
+		select count(af.Pkey)
+		from ApproveForm af,Staff s,LeaveForm lf
+		<where>
+			<if test="1==1">
+				and af.LeaveFormId=lf.Pkey
+			</if>
+			<if test="1==1">
+				and lf.StaffId=s.Pkey
+			</if>
+			<if test="1==1">
+				and af.ApproverId=#{approverId}
+			</if>
+			<if test="ename != null and ename != ''">
+				and s.UName like '%${ename}%'
+			</if>
+		    <if test="sdate!=null">
+		     	and lf.StartDate &gt;= #{sdate}
+		    </if>
+		    <if test="edate!=null">
+		    	and lf.EndDate &lt;= #{edate}
+		    </if>
+		</where>
+	</select>          
+	            
+	<select id="getAppedList" resultMap="apped_map" parameterType="AppedListVO">
+		select lt.TypeName,s.UName,lf.LeaveDays,lf.StartDate,lf.EndDate,lf.Pkey,lt.Pkey,s.Pkey
+		from LeaveType lt,LeaveForm lf,Staff s,ApproveForm apf
+		<where>
+			<if test="1==1">
+				and apf.LeaveFormId=lf.Pkey
+			</if>
+			<if test="1==1">
+				and lf.StaffId=s.Pkey
+			</if>
+			<if test="1==1">
+				and lf.LeaveType=lt.Pkey
+			</if>
+			<if test="1==1">
+				and apf.ApproverId=#{approverId}
+			</if>
+			<if test="ename != null and ename != ''">
+				and s.UName like '%${ename}%'
+			</if>
+			<if test="sdate!=null">
+			    and lf.StartDate &gt;= #{sdate}
+			</if>
+			<if test="edate!=null">
+			    and lf.EndDate &lt;= #{edate}
+			</if>
+		</where>
+		limit #{start},#{length}
+	</select>
+	
+	<select id="getTypeListcount" resultType="int" parameterType="TypelistVO">
+		select count(Pkey)
+		from LeaveType
+		<where>
+			<if test="tname != null and tname != ''">
+				and TypeName like '%${tname}%'
+		    </if>
+		    <if test="eflag == 1 or eflag == 2">
+		    	and EFlag = #{eflag}
+		    </if>
+		</where>
+	</select>
+	
+	<select id="getTypeList" resultMap="leavetype_map" parameterType="TypelistVO">
+		select Pkey,TypeName,EFlag
+		from LeaveType
+		<where>
+			<if test="tname != null and tname != ''">
+				and TypeName like '%${tname}%'
+		    </if>
+		    <if test="eflag==1 or eflag==2">
+		    	and EFlag = #{eflag}
+		    </if>
+		</where>
+		limit #{start},#{length}
+	</select>
+	
+	<select id="getDetail" resultType="ApproveFormPO" parameterType="int">
+		select 
+			Staff.uname as "approverName",
+			ApproveForm.Pkey as "approveFormId",
+			ApproveForm.leaveFormId as "leaveFormId",
+			ApproveForm.approveLevel as "approveLevel",
+			ApproveForm.approverId as "approverId",
+			ApproveForm.approveRes as "approveRes",
+			ApproveForm.approveTime as "approveDate",
+			ApproveForm.approveSuggestion as "approveSuggestion"
+		from ApproveForm, Staff
+		where ApproveForm.LeaveFormId=#{pkey} AND Staff.pkey = ApproveForm.approverId
+	</select>
+	
+	<select id="getDetail2" resultMap="apped_map" parameterType="int" >
+		select s.UName,lt.TypeName,lf.LeaveDays,lf.AppDate,lf.StartDate,lf.EndDate,s.Pkey
+		from LeaveForm lf,LeaveType lt,Staff s
+		where lf.Pkey=#{pkey} and lf.LeaveType=lt.Pkey and lf.StaffId=s.Pkey
+	</select> 
+	
+	<update id="VModify" parameterType="VModifyVO">
+		update LeaveType
+		set TypeName = #{jname},
+		    EFlag  = '1'
+		where Pkey = #{pkey}
+	</update>
+	
+	<update id="setcondition1" parameterType="int">
+	     update LeaveType
+	     set EFlag ='2'
+	     where Pkey = #{pkey}
+	</update>
+	<update id="setcondition2" parameterType="int">
+	     update LeaveType
+	     set EFlag ='1'
+	     where Pkey = #{pkey}
+	</update>
+</mapper>

@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.hit.mapper.LeaveInfoMapper">
+
+    <!-- 插入请假申请 -->
+	<insert id="insertLeaveInfo" parameterType="LeaveInfoInsertVO">
+		INSERT INTO LeaveForm 
+		(StaffId, LeaveType, LeaveDays, AppDate, StartDate, EndDate)
+		VALUES 
+		(#{StaffId}, #{vtype}, #{sno}, #{appdate}, #{sd1}, #{ed1})
+	</insert>
+	
+	<!-- 查询当前员工年假/调休假剩余天数 -->
+	<select id="getLeftDays" resultType="int">
+		SELECT LeftDays 
+		FROM LeftLeaveDays
+		WHERE LeaveTypeId = #{0} AND StaffId = #{1}
+	</select>
+	
+	<select id="getStaffNameById" resultType="String">
+		SELECT uname
+		FROM Staff
+		WHERE pkey = #{0}
+	</select>
+	
+	<!-- 更新当前员工年假/调休假剩余天数 -->
+	<update id="updateLeftDays">
+		UPDATE LeftLeaveDays
+		SET LeftDays =  LeftDays - #{2}
+		WHERE LeaveTypeId = #{0} AND StaffId = #{1}
+	</update>
+	
+	<!-- 插入审批记录 -->
+	<insert id="insertApproveInfo">
+		INSERT INTO ApproveForm
+		(leaveFormId, approveLevel, approverId)
+		VALUES
+		(#{0}, #{1}, #{2})
+	</insert>
+	
+	<select id="getApproveFormByLeaveFormId" resultType="ApproveFormPO" parameterType="int">
+		SELECT 
+			Staff.uname as "approverName",
+			ApproveForm.approveLevel as "approveLevel",
+			ApproveForm.approveRes as "approveRes",
+			ApproveForm.approveTime as "approveDate",
+			ApproveForm.approveSuggestion as "approveSuggestion"
+		FROM Staff, ApproveForm
+		WHERE
+			Staff.Pkey = ApproveForm.approverId
+			AND ApproveForm.leaveFormId = #{leaveFormId}
+	</select>
+	
+	<select id="getApproveFormByLeaveFormIdAndApproverId" resultType="ApproveFormPO">
+		SELECT 
+			Staff.uname as "approverName",
+			ApproveForm.approveLevel as "approveLevel",
+			ApproveForm.approveRes as "approveRes",
+			ApproveForm.approveTime as "approveDate",
+			ApproveForm.approveSuggestion as "approveSuggestion"
+		FROM Staff, ApproveForm
+		WHERE
+			Staff.Pkey = ApproveForm.approverId
+			AND ApproveForm.leaveFormId = #{0}
+			AND ApproveForm.approverId = #{1}
+	</select>
+	
+	<select id="getLastLeaveForm" resultType="LeaveFormPO">
+		SELECT 
+			pkey as "leaveFormId",
+			staffId as "staffId",
+			leaveType as "leaveTypeId",
+			leaveDays as "leaveDays",
+			appDate as "appDate",
+			startDate as "startDate",
+			endDate as "endDate",
+			reason as "reason",
+			mark as "mark"
+		FROM LeaveForm
+		ORDER BY Pkey DESC
+		LIMIT 1
+	</select>
+	
+	<!-- 查询本部门领导的员工ID -->
+	<select id="getLeaderIdByStaffId" resultType="Integer" parameterType="int">
+		SELECT Department.leaderId as "leaderId"
+		FROM Department
+		WHERE Department.pkey = (SELECT Staff.curDepartment 
+								FROM Staff 
+								WHERE Staff.pkey = #{staffId})
+	</select>
+	
+	<!-- 查询上级部门领导的员工ID -->
+	<select id="getUpperLeaderIdByStaffId" resultType="Integer" parameterType="int">
+		SELECT Department.leaderId as "upperLeaderId"
+		FROM Department
+		WHERE Department.pkey = (SELECT Department.upperDepartmentId
+								FROM Department, Staff
+								WHERE Department.Pkey = Staff.curDepartment
+							          AND Staff.Pkey = #{staffId})
+			
+	</select>
+	
+	<!-- 查询待审批的请假申请 -->
+	<select id="getLeaveInfo" resultType="leaveInfoPO" parameterType="leaveInfoSearchVO">
+		SELECT
+			LeaveForm.Pkey as "leaveInfoId", 
+			Staff.uname as "uname",
+			LeaveForm.staffId as "staffId",
+			LeaveType.typeName as "leaveType", 
+			LeaveForm.leaveDays as "leaveDays", 
+			LeaveForm.appDate as "appDate",
+			LeaveForm.startDate as "startDate", 
+			LeaveForm.endDate as "endDate"
+		FROM Staff, LeaveType, LeaveForm
+		<where>
+			<if test="ename != null and ename != ''">
+				uname LIKE '%${ename}%'
+			</if>
+		    <if test="sdate != null">
+		    	AND startDate &gt;= #{sdate} 
+		    </if>
+			<if test="edate != null">
+				AND endDate &lt;= #{edate} 
+			</if>
+				AND LeaveType.Pkey = LeaveForm.LeaveType 
+				AND LeaveForm.mark = 1
+				AND LeaveForm.StaffId = Staff.Pkey
+				AND LeaveForm.pkey IN (SELECT af1.leaveFormId 
+										FROM ApproveForm af1 WHERE af1.approverId = #{staffId} AND af1.approveRes = 1
+										AND ((af1.approveLevel = 2 and af1.approveRes = 1 and (not exists (select * from ApproveForm af2 where af2.leaveFormId = af1.leaveFormId and approveLevel = 1 and (approveRes = 1 or approveRes = 3)))) 
+ 										OR af1.approveLevel = 1))
+		</where> 
+		limit #{start},#{length}
+	</select>
+	
+	<select id="getLeaveInfoCount" resultType="int" parameterType="leaveInfoSearchVO">
+		SELECT COUNT(LeaveForm.Pkey)
+		FROM Staff, LeaveForm 
+		<where>
+			<if test="ename != null and ename != ''">
+				AND uname LIKE '%${ename}%'
+			</if>
+			<if test="sdate != null">
+				AND startDate &gt;= #{sdate}
+			</if>
+			<if test="edate != null">
+				AND endDate &lt;= #{edate}
+			</if>
+				AND Staff.Pkey = LeaveForm.staffId
+				AND LeaveForm.mark = 1
+				AND LeaveForm.pkey IN (SELECT af1.leaveFormId 
+										FROM ApproveForm af1 WHERE af1.approverId = #{staffId} AND af1.approveRes = 1
+										AND ((af1.approveLevel = 2 and af1.approveRes = 1 and (not exists (select * from ApproveForm af2 where af2.leaveFormId = af1.leaveFormId and approveLevel = 1 and (approveRes = 1 or approveRes = 3)))) 
+ 										OR af1.approveLevel = 1))
+		</where>
+	</select>
+	
+	<update id="updateApprovalToPassByStaffIdAndLeaveFormId">
+		UPDATE ApproveForm
+		SET ApproveRes = 2, ApproveTime = #{2}
+		WHERE approverId = #{0} AND leaveFormId = #{1}
+	</update>
+	
+	<update id="updateLeaveFormToPassByLeaveFormId">
+		UPDATE LeaveForm
+		SET Mark = 2
+		WHERE pkey = #{0}
+	</update>
+	
+	<update id="updateApprovalToTurndownByStaffIdAndLeaveFormId">
+		UPDATE ApproveForm
+		SET ApproveRes = 3, ApproveTime = #{2}
+		WHERE approverId = #{0} AND leaveFormId = #{1}
+	</update>
+	
+	<update id="updateLeaveFormToTurndownByLeaveFormId">
+		UPDATE LeaveForm
+		SET Mark = 3
+		WHERE pkey = #{0}
+	</update>
+	
+	<update id="updateApprovalToPassWithSuggestion">
+		UPDATE ApproveForm
+		SET ApproveRes = 2, approveSuggestion = #{2}, ApproveTime = #{3}
+		WHERE approverId = #{0} AND ApproveForm.leaveFormId = #{1}
+	</update>
+	
+	<update id="updateApprovalToTurndownWithSuggestion">
+		UPDATE ApproveForm
+		SET ApproveRes = 3, approveSuggestion = #{2}, ApproveTime = #{3}
+		WHERE approverId = #{0} AND leaveFormId = #{1}
+	</update>
+	
+</mapper>

@@ -1,0 +1,60 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop" 
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+		http://www.springframework.org/schema/beans/spring-beans-4.3.xsd 
+		http://www.springframework.org/schema/mvc 
+		http://www.springframework.org/schema/mvc/spring-mvc-4.3.xsd 
+		http://www.springframework.org/schema/context 
+		http://www.springframework.org/schema/context/spring-context-4.3.xsd 
+		http://www.springframework.org/schema/aop 
+		http://www.springframework.org/schema/aop/spring-aop-4.3.xsd 
+		http://www.springframework.org/schema/tx
+		http://www.springframework.org/schema/tx/spring-tx-4.3.xsd">
+
+	<!-- 使用了注解方式的映射器和适配器 -->
+	<mvc:annotation-driven  conversion-service="cs"></mvc:annotation-driven>
+	<bean class="org.springframework.web.servlet.view.InternalResourceViewResolver" />
+	
+	<!-- 配置自定义转换器 -->
+	<bean id="cs" class="org.springframework.format.support.FormattingConversionServiceFactoryBean">
+		<property name="converters">
+			<list>
+				<bean class="com.hit.converter.String2DateConverter"></bean>
+			</list>
+		</property>
+	</bean>
+	
+	<!-- 配置文件上传: 多部分解析器 -->
+	<bean id="multipartResolver"
+		class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+		<property name="defaultEncoding" value="utf-8"></property>
+		<property name="maxUploadSize" value="104857600"></property>
+		<property name="maxInMemorySize" value="40960"></property>
+	</bean>
+	
+	<!-- 过滤静态资源 html,css,js,图片等-->
+	<mvc:default-servlet-handler/>
+	
+	<context:component-scan base-package="com.hit.control"></context:component-scan>
+</beans>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

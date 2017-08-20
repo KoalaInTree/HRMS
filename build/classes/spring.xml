@@ -1,0 +1,114 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop" 
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+		http://www.springframework.org/schema/beans/spring-beans-4.3.xsd 
+		http://www.springframework.org/schema/mvc 
+		http://www.springframework.org/schema/mvc/spring-mvc-4.3.xsd 
+		http://www.springframework.org/schema/context 
+		http://www.springframework.org/schema/context/spring-context-4.3.xsd 
+		http://www.springframework.org/schema/aop 
+		http://www.springframework.org/schema/aop/spring-aop-4.3.xsd 
+		http://www.springframework.org/schema/tx
+		http://www.springframework.org/schema/tx/spring-tx-4.3.xsd">
+	<!-- 
+		配置数据源
+		dbcp: 数据响应速度略快
+		c3p0: 连接稳定性更好
+	 -->
+	<bean id="ds" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
+		<property name="driverClassName" value="com.mysql.jdbc.Driver" />
+		<property name="url" value="jdbc:mysql://120.25.76.27:3306/neusoft?useUnicode=true&amp;characterEncoding=utf-8" />
+		<property name="username" value="guest1" />
+		<property name="password" value="2017neusoft" />			
+		<!-- 数据库连接池： 提升数据库的访问效率 -->
+		<!-- 连接池启动时连接的个数 -->
+		<property name="initialSize" value="3" />
+		<!-- 连接池的连接数最大值 -->
+		<property name="maxActive" value="30" />
+		<!-- 最大空闲值.当经过一个高峰时间后，连接池可以慢慢将已经用不到的连接慢慢释放一部分，一直减少到maxIdle为止 -->
+		<property name="maxIdle" value="5" />
+		<!--  最小空闲值.当空闲的连接数少于阀值时，连接池就会预申请去一些连接，以免洪峰来时来不及申请 -->
+		<property name="minIdle" value="3" />
+	</bean>	
+		
+	<!-- 将mybatis的SqlSessionFactory交给spring管理 -->
+	<!-- 数据库连接的工厂类  -->
+	<bean id="sf" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<!-- 加载mybatis的主配置文件 -->
+		<property name="configLocation" value="classpath:SqlMapConfig.xml"/>
+		<!-- 注入数据源 -->
+		<property name="dataSource" ref="ds" />
+	</bean>	
+		
+	<!-- 配置mapper层自动获取数据库连接 -->
+	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<!-- 指定扫描的包名 
+		如果扫描多个包，每个包中间使用半角逗号分隔
+		-->
+		<property name="basePackage" value="com.hit.mapper"/>
+		<!-- 自动创建session（connection）去数据库交互 -->
+		<property name="sqlSessionFactoryBeanName" value="sf"/>	
+	</bean>	
+	
+	<!-- 声明事务管理器 -->
+	<bean id="txm" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="ds"></property>
+	</bean>
+	
+	<!-- 配置事务通知 -->
+	<tx:advice id="txAdvice" transaction-manager="txm">
+		<!-- 配置事务的传播特性 -->
+		<!-- 
+			 配置事务传播特性 
+			REQUIRED 		支持当前事务，如果当前没有事务，就新建一个事务。这是最常见的选择。常用于DML语句的操作
+			SUPPORTS 		支持当前事务，如果当前没有事务，就以非事务方式执行。 常用于DQL语句的操作
+			
+			MANDATORY 		支持当前事务，如果当前没有事务，就抛出异常。
+			REQUIRES_NEW 	新建事务，如果当前存在事务，把当前事务挂起。
+			NOT_SUPPORTED 	以非事务方式执行操作，如果当前存在事务，就把当前事务挂起。
+			NEVER 			以非事务方式执行，如果当前存在事务，则抛出异常。
+			NESTED 			如果当前存在事务，则在嵌套事务内执行。如果当前没有事务，则进行与REQUIRED类似的操作。	 	 
+	    -->
+	    <!-- 
+	    	规定:  以save insert update delete为起始名的方法，执行事务
+	    	                  以find select get  validate为起始名的方法，不执行事务
+	    	规范大于规则：不准起其他的名字
+	     -->
+		<tx:attributes>
+			<tx:method name="save*" propagation="REQUIRED"/>
+			<tx:method name="insert*" propagation="REQUIRED"/>
+			<tx:method name="update*" propagation="REQUIRED"/>
+			<tx:method name="delete*" propagation="REQUIRED"/>
+			<tx:method name="find*" propagation="SUPPORTS" read-only="true"/>
+			<tx:method name="select*" propagation="SUPPORTS" read-only="true"/>
+			<tx:method name="get*" propagation="SUPPORTS" read-only="true"/>	
+			<tx:method name="validate*" propagation="SUPPORTS" read-only="true"/>	
+		</tx:attributes>
+	</tx:advice>
+	<!-- 通过aop切面来控制事务 -->
+	<aop:config>
+		<aop:advisor advice-ref="txAdvice" pointcut="execution(* com.hit.service.*.*(..))"/>
+	</aop:config>
+		
+	<context:component-scan base-package="com.hit.service"></context:component-scan>
+</beans>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

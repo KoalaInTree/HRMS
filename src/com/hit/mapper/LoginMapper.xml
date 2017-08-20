@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hit.mapper.LoginMapper">   
+	
+	
+<resultMap type="userPO" id="userMap">
+		<id property="loginname" column="loginname"/>
+		<result property="uame" column="uame"/>
+		<result property="password" column="password"/>
+		<result property="privilege" column="privilege"/>
+	</resultMap>
+	
+
+	
+	
+	<select id="getPassword" resultMap="userMap" parameterType="String">
+		select Pkey, UName, Password, Privilege
+		from Staff
+		<where>LoginName = #{LoginName}</where>
+	</select>
+	
+	<select id="getDepName" resultType="DepNamePO" >
+		select DepartmentName as "departmentname",Pkey as "departmentid"
+		from Department
+	</select>
+	
+	<select id="getPosName" resultType="PosNamePO" >
+		select PositionName as "positionname" , Pkey as "positionid"
+		from Position
+	</select>
+	
+	<update id="changePassword" parameterType="userLoginVO">
+		update Staff
+		set Password = #{password}
+		<where>LoginName = 'lixiang'</where>
+	</update>
+	
+	<insert id="vAddType" parameterType="VTypeVO">
+		INSERT INTO LeaveType (TypeName,EFlag) VALUES(#{type},'1')
+	</insert>
+	
+	<insert id="addJob" parameterType="JobVO">
+		INSERT INTO Position (PositionName,PositionLevel,Mark) VALUES(#{jname},#{jlevel},'1')
+	</insert>
+	
+	<insert id="addDept" parameterType="DeptVO">
+		INSERT INTO Department (DepartmentName,LeaderId,MaxPeople,Mark,UpperDepartmentId,EstablishTime) VALUES(#{dname},#{userid},#{dno},'1',#{uplevel},SYSDATE())
+	</insert>
+	
+	<insert id="addEmp" parameterType="EmployeeVO">
+		INSERT INTO Staff (UName,LoginName,Password,Sex,Birthday,InDay,Salary,Privilege,CurDepartment,CurPosition,Mark,Img) VALUES(#{ename},#{lname},#{lpass},#{sex},#{birthday},#{hiredate},#{salary},#{power},#{dept},#{job},'1',#{headimg})
+	</insert>
+	
+	<select id="selectId" resultType="LeaveDayVO" parameterType="EmployeeVO">
+		select Pkey
+		from Staff
+		where LoginName = #{lname}
+	</select>
+	
+	<insert id="addLeftDays" parameterType="LeaveDayVO">
+		INSERT INTO LeftLeaveDays (StaffId,LeaveTypeId,LeftDays) VALUES (#{staffid},1,10000),(#{staffid},2,10000),(#{staffid},3,10000),(#{staffid},4,10000),(#{staffid},5,10000),(#{staffid},6,10000),(#{staffid},7,10000),(#{staffid},8,10000),(#{staffid},9,10000),(#{staffid},10,10000)
+	</insert>
+	
+</mapper>

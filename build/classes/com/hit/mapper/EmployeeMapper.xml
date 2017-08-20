@@ -1,0 +1,376 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hit.mapper.EmployeeMapper">  
+    <update id="SetEmpPosition" parameterType="EmpConditionVO">
+	update Staff 
+	<if test="positionname != null and positionname !='' ">
+	set CurPosition='${positionid}'
+	</if>
+	where Pkey = #{employeeid}
+	
+	</update>    
+	 <select id="getEmployeeListCount" resultType="int">
+		select count(Pkey)
+		from Staff 
+	</select>   
+	 <select id="getDepName" resultType="DepNamePO">
+		select DepartmentName as "departmentname",Pkey as "departmentid"
+		from Department 
+	</select>
+	<select id="getPosName" resultType="PosNamePO">
+		select PositionName as "positionname",Pkey as "positionid"
+		from Position
+	</select>
+	 <select id="getEmployeeList" resultType="EmployeeInfoPO" parameterType="EmployeeListSearchVO">
+		select Staff.Pkey as "pkey",
+		UName,
+		LoginName,
+		Sex,
+		Birthday,
+		InDay,
+		PositionName,
+		DepartmentName,
+		Marriage,
+		Salary,
+		Education,
+		GraduateTime,
+		School,
+		Staff.Mark as "mark"
+		from Staff,Department,Position
+		<where> 
+		Staff.CurPosition = Position.Pkey
+		and Staff.CurDepartment = Department.Pkey
+		<if test="uname != null and uname != ''">
+				and Staff.UName like '%${uname}%'
+		</if>
+		<if test="sex != null and sex != ''">
+				and Staff.Sex = '${sex}'
+		</if>
+		<if test="positionname != null and positionname != ''">
+		        and Position.PositionName = '${positionname}'				
+		</if>
+		<if test="departmentname != null and departmentname != ''">
+		        and Department.DepartmentName = '${departmentname}'				
+		</if>
+		<if test="sdate != null">
+				and Staff.Inday &gt;= #{sdate}
+			</if>
+		<if test="edate != null">
+				and Staff.Inday &lt;= #{edate}
+		</if>	
+		<if test="mark != null and  mark != ''">
+				and Staff.Mark = #{mark}
+		</if>
+		</where>
+		limit #{start},#{length}
+	</select>                            
+	
+	<select id="getCurEmployee" resultType="EmployeeInfoPO" parameterType="EmployeeSearchVO">
+		select Staff.Pkey as "pkey",
+		UName,
+		LoginName,
+		Sex,
+		Birthday,
+		InDay,
+		PositionName,
+		DepartmentName,
+		Marriage,
+		Salary,
+		Education,
+		GraduateTime,
+		School,
+		Staff.Mark as "mark",
+		Img as "image"
+		from Staff,Department,Position
+		<where>
+		    Staff.CurDepartment = Department.Pkey and Staff.CurPosition = Position.Pkey
+			
+			<if test="uname != null and uname != ''">
+				and UName = #{uname}
+			</if>
+
+		</where>
+		
+		
+	</select>
+
+	<select id="getEmpPosRec" resultType="EmpPosRecInfoPO">
+		select UName,PositionName,StartDate,EndDate
+		from StaffPositionRec,Staff,Position 
+		<where>
+		    StaffPositionRec.StaffID = Staff.Pkey and StaffPositionRec.PositionId = Position.Pkey		
+			<if test="uname != null and uname != ''">
+				and Staff.UName = #{uname}
+			</if>
+
+		</where>
+	</select>
+	
+	<select id="getEmpDepRec" resultType="EmpDepRecInfoPO">
+		select UName,DepartmentName,StartDate,EndDate
+		from StaffDepartmentRec,Staff,Department
+		<where>
+		    StaffDepartmentRec.StaffID = Staff.Pkey and StaffDepartmentRec.DepartmentId = Department.Pkey			
+			<if test="uname != null and uname != ''">
+				and Staff.UName = #{uname}
+			</if>
+
+		</where>
+	</select>
+	
+	<select id="getDepInfoList" resultType="DepInfoPO" parameterType="DepListSearchVO">
+		select 
+			D1.Pkey as "departmentid",
+		 	D1.DepartmentName as "departmentname",
+		 	Staff.UName as "leader",
+		 	Staff.Pkey as  "leaderid",
+		 	D1.Maxpeople as "maxpeople",
+		 	D1.Mark as "mark",
+		 	D2.DepartmentName as "upperdepartmentname",
+		 	D1.UpperDepartmentId as "upperdepartmentid",
+		 	D1.EstablishTime as "establishtime"
+		from Department as D1,Staff,Department as D2	 
+		<where>
+		    D1.LeaderId = Staff.Pkey and D1.UpperDepartmentId = D2.Pkey
+			<if test="depname != null and depname != ''">
+				and D1.DepartmentName like '%${depname}%'
+			</if>
+			<if test="mark != null and  mark != ''">
+				and D1.Mark = #{mark}
+			</if>
+
+		</where>
+		limit #{start},#{length}
+	</select>
+	
+	<select id="getCurDep" resultType="DepInfoPO" parameterType="DepListSearchVO">
+		select 
+			D1.Pkey as "departmentid",
+		 	D1.DepartmentName as "departmentname",
+		 	Staff.UName as "leader",
+		 	Staff.Pkey as  "leaderid",
+		 	D1.Maxpeople as "maxpeople",
+		 	D1.Mark as "mark",
+		 	D2.DepartmentName as "upperdepartmentname",
+		 	D1.UpperDepartmentId as "upperdepartmentid",
+		 	D1.EstablishTime as "establishtime"
+		from Department as D1,Staff,Department as D2
+		 
+		<where>
+		    D1.LeaderId = Staff.Pkey and
+		    D1.UpperDepartmentId = D2.Pkey
+			<if test="depname != null and depname != ''">
+				and D1.DepartmentName = '${depname}'
+			</if>
+		</where>
+	</select>
+	
+	 <select id="getCurDepPeopleCount" resultType="int" parameterType="DepListSearchVO">
+		select count(Staff.Pkey)
+		from Staff,Department 
+		<where>
+		    Staff.CurDepartment = Department.Pkey
+			<if test="depname != null and depname != ''">
+				and Department.DepartmentName = '${depname}'
+			</if>
+		</where>
+	</select>   
+	   
+	<select id="getDepInfoListCount" resultType="int" parameterType="DepListSearchVO">
+		select count(Department.Pkey)
+		from Department,Staff
+		<where>
+		    Department.LeaderId = Staff.Pkey
+			<if test="depname != null and depname != ''">
+				and DepartmentName like '%${depname}%'
+			</if>
+			<if test="mark != null and mark != ''">
+				and Department.Mark = #{mark}
+			</if>
+
+		</where>
+	</select>
+	
+	<select id="getEmpInDep" resultType="EmpInDepPO" parameterType="DepListSearchVO">
+		select 
+		Staff.Pkey as "staffid",
+		Staff.UName as "staffname",
+		Position.PositionName as "positionname",
+		Position.PositionLevel as "positionlevel",
+		Staff.Sex as "sex",
+		(2017-year(Staff.Birthday)) as "age"
+		from Staff,Department,Position
+		<where>
+		    Staff.CurPosition = Position.Pkey and
+		    Staff.CurDepartment = Department.Pkey
+			<if test="depname != null and depname != ''">
+				and Department.DepartmentName = '${depname}'
+			</if>
+		</where>
+	</select>   
+	
+	<select id="getPosInfoList" resultType="PosInfoPO" parameterType="PosListSearchVO">
+		select 
+			Position.Pkey as "positionid",
+		 	PositionName as "positionname",
+		 	PositionLevel as "positionlevel",
+		 	Position.Mark as "mark"
+		from Position
+		 
+		<where>
+			<if test="posname != null and posname != ''">
+				and PositionName like '%${posname}%'
+			</if>
+			<if test="mark != null and mark != ''">
+				and Position.Mark = #{mark}
+			</if>
+
+		</where>
+		limit #{start},#{length}
+	</select>
+	
+	<select id="getPosInfoListCount" resultType="int" parameterType="PosListSearchVO">
+		select count(Position.Pkey)
+		from Position
+		<where>
+			<if test="posname != null and posname != ''">
+				and PositionName like '%${posname}%'
+			</if>
+			<if test="mark != null and mark != ''">
+				and Position.Mark = #{mark}
+			</if>
+
+		</where>
+	</select>
+	
+	<select id="getCurPos" resultType="PosInfoPO" parameterType="PosListSearchVO">
+		select 
+			Pkey as "positionid",
+			PositionName as "positionname",
+			PositionLevel as "positionlevel",
+			Mark as "mark"
+		from Position
+		 
+		<where>
+			<if test="posname != null and posname != ''">
+				and PositionName = '${posname}'
+			</if>
+		</where>
+	</select>
+	
+	<select id="getEmpInPos" resultType="EmpInPosPO" parameterType="PosListSearchVO">
+		select 
+		Staff.Pkey as "staffid",
+		Staff.UName as "staffname",
+		Department.DepartmentName as "departmentname",
+		Staff.Sex as "sex",
+		(2017-year(Staff.Birthday)) as "age"
+		from Staff,Department,Position
+		<where>
+		    Staff.CurDepartment = Department.Pkey and
+		    Staff.CurPosition = Position.Pkey
+			<if test="posname != null and posname != ''">
+				and PositionName = '${posname}'
+			</if>
+		</where>
+	</select>  
+		<update id="SetDeptCondition" parameterType="DeptConditionVO">
+	update Department 
+	<if test="mark==1">
+	set Mark='2'
+	</if>
+	<if test="mark==2">
+	set Mark ='1'
+	</if>
+	where Pkey = #{departmentid}
+	
+	</update>
+	<update id="SetPosiCondition" parameterType="PosiConditionVO">
+	update Position 
+	<if test="mark==1">
+	set Mark='2'
+	</if>
+	<if test="mark==2">
+	set Mark ='1'
+	</if>
+	where Pkey = #{positionid}
+	
+	</update>
+	<update id="SetEmpCondition" parameterType="EmpConditionVO">
+	update Staff 
+	<if test="mark==1">
+	set Mark='2'
+	</if>
+	<if test="mark==2">
+	set Mark ='1'
+	</if>
+	where Pkey = #{employeeid}	
+	</update>
+	
+	<update id="UpdatePosi" parameterType="UpdatePosiVO">
+	
+	update Position
+	set PositionName =#{jname},PositionLevel =#{jlevel}
+	where Pkey=#{pid}
+	
+	</update>
+	
+	<update id="UpdateDept" parameterType="UpdateDeptVO">
+	
+	update Department
+	set DepartmentName =#{dname},LeaderId = #{dlid},Maxpeople =#{maxpeople},UpperDepartmentId = #{upperid}
+	where Pkey=#{did}
+	
+	</update>
+	
+	<update id="UpdateEmp" parameterType="UpdateEmpVO">
+	
+	update Staff
+	set UName =#{empname},
+	LoginName = #{loginname},
+	Sex =#{sex},
+	Birthday = #{birthday},
+	InDay = #{inday},
+	Salary = #{salary},
+	Privilege = #{privilege}
+	where Pkey=#{pkey}
+	
+	</update>
+	<update id="ChangeEmpDepa" parameterType="ChangeEmpVO">
+	update Staff
+	set CurDepartment =#{departmentId}
+	where Pkey = #{staffId}
+	
+	</update>
+	<update id="ChangeEmpDepa2" parameterType="ChangeEmpVO">
+	update StaffDepartmentRec
+	set EndDate =SYSDATE()
+	where StaffId = #{staffId} and EndDate is null
+	
+	</update>
+	<insert id="ChangeEmpDepa3" parameterType="ChangeEmpVO">
+	insert into StaffDepartmentRec
+	(StaffId,DepartmentId,StartDate) values (#{staffId},#{departmentId},SYSDATE())
+
+	</insert>
+	<update id="ChangeEmpPosi" parameterType="ChangeEmpVO">
+	update Staff
+	set CurPosition =#{positionId}
+	where Pkey = #{staffId}
+	
+	</update>
+	<update id="ChangeEmpPosi2" parameterType="ChangeEmpVO">
+	update StaffPositionRec
+	set EndDate =SYSDATE()
+	where StaffId = #{staffId} and EndDate is null
+	
+	</update>
+	<insert id="ChangeEmpPosi3" parameterType="ChangeEmpVO">
+	insert into StaffPositionRec
+	(StaffId,PositionId,StartDate) values (#{staffId},#{positionId},SYSDATE())
+
+	</insert>
+	
+</mapper>
